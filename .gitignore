@@ -1,0 +1,17 @@
+target/
+build/
+dist/
+out/
+*.class
+*.log
+
+# IDEs
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+nbproject/
+
+.DS_Store
