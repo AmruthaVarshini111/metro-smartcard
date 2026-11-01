@@ -1,5 +1,7 @@
 # Metro Smartcard
 
+![CI](https://github.com/AmruthaVarshini111/metro-smartcard/actions/workflows/ci.yml/badge.svg)
+
 A metro route, fare and smartcard-wallet engine in Java 21, exposed through a Spring Boot REST API.
 
 Given a station network, it plans routes (fastest or fewest interchanges), prices journeys with distance slabs, peak and off-peak rules and a daily cap, and runs a smartcard wallet where every balance change is an immutable ledger entry and every gate tap is safe to retry.
