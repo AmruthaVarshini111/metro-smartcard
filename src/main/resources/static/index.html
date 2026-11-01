@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Metro Smartcard</title>
+<meta name="description" content="Plan metro journeys, load a smartcard and tap in and out. A Java and Spring Boot backend project.">
+<style>
+:root{
+  --bg:#f5f6f8; --surface:#ffffff; --text:#14181f; --muted:#596273; --line:#e2e5ea;
+  --brand:#1d4ed8; --brand-ink:#ffffff; --soft:#eef2ff;
+  --ok:#166534; --ok-bg:#e8f6ec; --warn:#92400e; --warn-bg:#fef3c7; --bad:#991b1b; --bad-bg:#fee2e2;
+  --blue:#2563eb; --red:#dc2626; --green:#16a34a;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0e1116; --surface:#171b22; --text:#e8ebf0; --muted:#9aa4b2; --line:#272d37;
+    --brand:#6b95ff; --brand-ink:#0b1020; --soft:#1c2438;
+    --ok:#86efac; --ok-bg:#12281a; --warn:#fcd34d; --warn-bg:#2b2410; --bad:#fca5a5; --bad-bg:#2d1515;
+    --blue:#60a5fa; --red:#f87171; --green:#4ade80;
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+a{color:var(--brand)}
+.wrap{max-width:1040px;margin:0 auto;padding:0 16px}
+header{background:var(--surface);border-bottom:1px solid var(--line)}
+header .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:14px;padding-bottom:14px;flex-wrap:wrap}
+.logo{font-weight:700;font-size:18px;display:flex;align-items:center;gap:10px}
+.logo i{width:28px;height:28px;border-radius:8px;background:var(--brand);display:inline-block;position:relative}
+.logo i::after{content:"";position:absolute;left:6px;right:6px;top:12px;height:4px;border-radius:2px;background:var(--brand-ink)}
+nav{display:flex;gap:16px;font-size:14px;flex-wrap:wrap}
+nav a{text-decoration:none;color:var(--muted)}
+nav a:hover{color:var(--brand)}
+.hero{padding:28px 0 8px}
+.hero h1{margin:0 0 6px;font-size:28px;line-height:1.2}
+.hero p{margin:0;color:var(--muted);max-width:640px}
+#banner{display:none;margin:16px 0 0;padding:10px 14px;border-radius:10px;background:var(--warn-bg);color:var(--warn);font-size:14px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:20px 0}
+@media (max-width:820px){.grid{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px}
+.card h2{margin:0 0 4px;font-size:18px}
+.sub{margin:0 0 16px;color:var(--muted);font-size:14px}
+label{display:block;font-size:13px;font-weight:600;margin:12px 0 4px}
+select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--text);font:inherit}
+.seg{display:flex;gap:0;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-top:4px}
+.seg button{flex:1;padding:9px 8px;border:0;background:var(--bg);color:var(--muted);font:inherit;font-size:14px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--brand);color:var(--brand-ink);font-weight:600}
+.btn{padding:10px 16px;border-radius:10px;border:1px solid var(--brand);background:var(--brand);color:var(--brand-ink);font:inherit;font-weight:600;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--brand)}
+.btn:disabled{opacity:.55;cursor:not-allowed}
+.btn.full{width:100%;margin-top:16px}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.row .btn{flex:1;min-width:110px}
+.result{margin-top:16px;border-top:1px solid var(--line);padding-top:16px}
+.stats{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:12px}
+.stat b{display:block;font-size:22px}
+.stat span{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+ol.path{list-style:none;margin:0;padding:0}
+ol.path li{display:flex;align-items:center;gap:10px;padding:5px 0;font-size:15px}
+.dot{width:12px;height:12px;border-radius:50%;flex:none}
+.chip{font-size:12px;padding:2px 8px;border-radius:999px;background:var(--soft);color:var(--brand);margin-left:auto;white-space:nowrap}
+.bal{font-size:36px;font-weight:700;line-height:1.1}
+.cardid{font:13px ui-monospace,Menlo,monospace;color:var(--muted)}
+.status{margin-top:14px;padding:10px 12px;border-radius:10px;background:var(--soft);font-size:14px}
+.msg{margin-top:12px;padding:10px 12px;border-radius:10px;font-size:14px;display:none}
+.msg.ok{display:block;background:var(--ok-bg);color:var(--ok)}
+.msg.warn{display:block;background:var(--warn-bg);color:var(--warn)}
+.msg.bad{display:block;background:var(--bad-bg);color:var(--bad)}
+.list{list-style:none;margin:0;padding:0;font-size:14px}
+.list li{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-top:1px solid var(--line)}
+.list li:first-child{border-top:0}
+.list small{color:var(--muted);display:block}
+.neg{color:var(--bad)} .pos{color:var(--ok)}
+.empty{color:var(--muted);font-size:14px}
+details{margin-top:16px;font-size:14px;color:var(--muted)}
+summary{cursor:pointer;color:var(--text);font-weight:600}
+details ul{margin:8px 0 0;padding-left:18px}
+.hist{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+@media (max-width:820px){.hist{grid-template-columns:1fr}}
+.about{margin:8px 0 28px}
+.about h2{font-size:18px;margin:0 0 8px}
+.about ul{margin:0;padding-left:18px;color:var(--muted)}
+.about li{margin:3px 0}
+footer{border-top:1px solid var(--line);background:var(--surface);padding:22px 0;font-size:14px;color:var(--muted)}
+footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+footer a{margin-right:14px}
+.sr{position:absolute;left:-9999px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="logo"><i aria-hidden="true"></i> Metro Smartcard</div>
+    <nav>
+      <a href="#planner">Plan a journey</a>
+      <a href="#card">My card</a>
+      <a href="#about">How it works</a>
+      <a href="/swagger-ui.html">API docs</a>
+      <a id="navGit" href="#" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <h1>Plan a trip. Load a card. Tap in and out.</h1>
+    <p>A working metro fare system: route planning, peak pricing, a daily cap and a wallet that never double-charges. Try it below, no sign-up needed.</p>
+    <div id="banner" role="status"></div>
+  </section>
+
+  <div class="grid">
+    <!-- PLANNER -->
+    <section class="card" id="planner" aria-labelledby="ph">
+      <h2 id="ph">Plan a journey</h2>
+      <p class="sub">Pick two stations to see the route and the fare.</p>
+      <label for="from">From</label>
+      <select id="from" disabled></select>
+      <label for="to">To</label>
+      <select id="to" disabled></select>
+      <label>Prefer</label>
+      <div class="seg" role="group" aria-label="Route preference">
+        <button type="button" id="optFast" aria-pressed="true">Fastest</button>
+        <button type="button" id="optFew" aria-pressed="false">Fewest changes</button>
+      </div>
+      <button class="btn full" id="planBtn" disabled>Show route</button>
+      <div class="msg" id="planMsg"></div>
+      <div class="result" id="planOut" hidden></div>
+    </section>
+
+    <!-- CARD -->
+    <section class="card" id="card" aria-labelledby="ch">
+      <h2 id="ch">My smartcard</h2>
+      <p class="sub">A demo card is created for you. It lives on the server, so it can reset when the server restarts.</p>
+
+      <div id="noCard">
+        <button class="btn full" id="newCard" style="margin-top:0">Get a smartcard</button>
+        <div class="msg" id="noCardMsg"></div>
+      </div>
+
+      <div id="hasCard" hidden>
+        <div class="cardid">Card <span id="cid"></span></div>
+        <div class="bal" id="bal">₹0.00</div>
+        <label>Add money</label>
+        <div class="row">
+          <button class="btn ghost" data-top="5000">+ ₹50</button>
+          <button class="btn ghost" data-top="10000">+ ₹100</button>
+          <button class="btn ghost" data-top="20000">+ ₹200</button>
+        </div>
+
+        <label for="gate">At the gate: station</label>
+        <select id="gate"></select>
+        <div class="row" style="margin-top:10px">
+          <button class="btn" id="tapIn">Tap in</button>
+          <button class="btn" id="tapOut">Tap out</button>
+        </div>
+        <div class="status" id="status"></div>
+        <div class="msg" id="cardMsg"></div>
+
+        <details>
+          <summary>Fare rules</summary>
+          <ul>
+            <li>You need at least ₹20 to enter.</li>
+            <li>Fares run from ₹10 to ₹60 by distance. Peak hours on weekdays (8 to 10 am, 5 to 7 pm) cost full price; other times are 10% off.</li>
+            <li>You never pay more than ₹100 in fares per day.</li>
+            <li>Forgetting to tap out, or tapping out without tapping in, costs a ₹50 penalty.</li>
+          </ul>
+        </details>
+      </div>
+    </section>
+  </div>
+
+  <div class="hist" id="hist" hidden>
+    <section class="card"><h2>Trips</h2><p class="sub">Your journeys, newest first.</p><ul class="list" id="trips"></ul></section>
+    <section class="card"><h2>Wallet ledger</h2><p class="sub">Every balance change is a permanent entry.</p><ul class="list" id="ledger"></ul></section>
+  </div>
+
+  <section class="about" id="about">
+    <h2>What is under the hood</h2>
+    <ul>
+      <li>Routes use Dijkstra's algorithm on a graph, with interchanges as explicit edges.</li>
+      <li>Every top-up and tap carries an idempotency key, so a retry never charges twice.</li>
+      <li>Concurrent taps on one card are serialised, so the daily cap and balance cannot race.</li>
+      <li>Money is stored as whole paise, and the balance is the sum of an append-only ledger.</li>
+    </ul>
+    <p style="margin:10px 0 0;font-size:14px"><a id="aboutGit" href="#" target="_blank" rel="noopener">Read the code and design notes on GitHub</a> · <a href="/swagger-ui.html">Try the raw API</a></p>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div><strong id="who"></strong><br>Built with Java 21, Spring Boot and plain JavaScript.</div>
+    <div id="contact"></div>
+  </div>
+</footer>
+
+<script>
+/* ===== EDIT THESE: your details, shown in the footer ===== */
+const PROFILE = {
+  name: "Amrutha Varshini",
+  github: "https://github.com/AmruthaVarshini111/metro-smartcard",
+  linkedin: "",   // e.g. "https://www.linkedin.com/in/your-id"
+  email: ""       // e.g. "you@example.com"
+};
+/* ========================================================== */
+
+const LINES = { BLUE: "var(--blue)", RED: "var(--red)", GREEN: "var(--green)" };
+const FRIENDLY = {
+  INSUFFICIENT_BALANCE: "Your balance is too low to enter. Add some money first.",
+  NO_ROUTE: "No route between those stations.",
+  CARD_NOT_FOUND: "That card no longer exists.",
+  INVALID_TIME: "Tap-out time is earlier than tap-in."
+};
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const money = (m) => (m < 0 ? "−" : "") + "₹" + (Math.abs(m) / 100).toFixed(2);
+const when = (iso) => iso ? new Date(iso).toLocaleString([], { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "";
+const newKey = () => (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2);
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* ignore */ } },
+  del(k) { try { localStorage.removeItem(k); } catch (e) { /* ignore */ } }
+};
+
+let stations = [];
+let byId = {};
+let criterion = "FASTEST";
+let cardId = store.get("metro.cardId");
+
+async function api(path, opts) {
+  const o = opts || {};
+  const headers = {};
+  if (o.body) headers["Content-Type"] = "application/json";
+  if (o.key) headers["Idempotency-Key"] = o.key;
+  const res = await fetch("/api" + path, { method: o.method || "GET", headers, body: o.body ? JSON.stringify(o.body) : undefined });
+  let data = null;
+  try { data = await res.json(); } catch (e) { /* no body */ }
+  if (!res.ok) {
+    const err = new Error((data && data.code && FRIENDLY[data.code]) || (data && data.detail) || ("Something went wrong (" + res.status + ")"));
+    err.code = data && data.code;
+    throw err;
+  }
+  return data;
+}
+
+function show(el, kind, text) { el.className = "msg " + kind; el.textContent = text; }
+function hide(el) { el.className = "msg"; el.textContent = ""; }
+function busy(btns, on) { btns.forEach((b) => { b.disabled = on; }); }
+
+/* ---------- profile / footer ---------- */
+function renderProfile() {
+  $("who").textContent = PROFILE.name;
+  $("navGit").href = PROFILE.github;
+  $("aboutGit").href = PROFILE.github;
+  const links = [["GitHub", PROFILE.github], ["LinkedIn", PROFILE.linkedin], ["Email", PROFILE.email ? "mailto:" + PROFILE.email : ""]];
+  $("contact").innerHTML = links.filter((l) => l[1]).map((l) => '<a href="' + esc(l[1]) + '" target="_blank" rel="noopener">' + l[0] + "</a>").join("");
+}
+
+/* ---------- stations ---------- */
+function fillSelect(sel, selected) {
+  sel.innerHTML = "";
+  ["BLUE", "RED", "GREEN"].forEach((line) => {
+    const group = document.createElement("optgroup");
+    group.label = line.charAt(0) + line.slice(1).toLowerCase() + " line";
+    stations.filter((s) => s.line === line).forEach((s) => {
+      const o = document.createElement("option");
+      o.value = s.id; o.textContent = s.name;
+      group.appendChild(o);
+    });
+    if (group.children.length) sel.appendChild(group);
+  });
+  if (selected) sel.value = selected;
+}
+
+async function loadStations() {
+  const banner = $("banner");
+  for (let attempt = 0; attempt < 40; attempt++) {
+    try {
+      stations = await api("/stations");
+      break;
+    } catch (e) {
+      banner.style.display = "block";
+      banner.textContent = "Waking up the free demo server. This can take up to a minute…";
+      await new Promise((r) => setTimeout(r, 3000));
+    }
+  }
+  banner.style.display = "none";
+  if (!stations.length) {
+    banner.style.display = "block";
+    banner.textContent = "The server did not respond. Please refresh in a minute.";
+    return false;
+  }
+  byId = {}; stations.forEach((s) => { byId[s.id] = s; });
+  fillSelect($("from"), "B01");
+  fillSelect($("to"), "R07");
+  fillSelect($("gate"), "B01");
+  ["from", "to", "planBtn"].forEach((id) => { $(id).disabled = false; });
+  return true;
+}
+
+/* ---------- planner ---------- */
+function setCriterion(c) {
+  criterion = c;
+  $("optFast").setAttribute("aria-pressed", c === "FASTEST");
+  $("optFew").setAttribute("aria-pressed", c === "FEWEST_INTERCHANGES");
+}
+$("optFast").onclick = () => setCriterion("FASTEST");
+$("optFew").onclick = () => setCriterion("FEWEST_INTERCHANGES");
+
+$("planBtn").onclick = async () => {
+  const out = $("planOut"), msg = $("planMsg");
+  hide(msg); out.hidden = true;
+  busy([$("planBtn")], true);
+  try {
+    const q = await api("/route?from=" + encodeURIComponent($("from").value) + "&to=" + encodeURIComponent($("to").value) + "&criterion=" + criterion);
+    const r = q.route;
+    const mins = Math.max(1, Math.round(r.seconds / 60));
+    let html = '<div class="stats">'
+      + '<div class="stat"><b>' + mins + " min</b><span>Travel time</span></div>"
+      + '<div class="stat"><b>' + (r.distanceMeters / 1000).toFixed(1) + " km</b><span>Distance</span></div>"
+      + '<div class="stat"><b>' + r.interchanges + "</b><span>" + (r.interchanges === 1 ? "Change" : "Changes") + "</span></div>"
+      + '<div class="stat"><b>' + money(q.fareMinor) + "</b><span>Fare now</span></div></div>";
+    html += '<ol class="path">';
+    r.stations.forEach((s, i) => {
+      const prev = r.stations[i - 1];
+      const changed = prev && prev.line !== s.line;
+      if (changed) return; // the interchange is shown on the previous stop
+      const next = r.stations[i + 1];
+      const toLine = next && next.line !== s.line ? next.line : null;
+      html += '<li><span class="dot" style="background:' + (LINES[s.line] || "var(--muted)") + '"></span>' + esc(s.name)
+        + (toLine ? '<span class="chip">Change to ' + toLine.toLowerCase() + " line</span>" : "") + "</li>";
+    });
+    html += "</ol>";
+    out.innerHTML = html;
+    out.hidden = false;
+  } catch (e) {
+    show(msg, "bad", e.message);
+  } finally { busy([$("planBtn")], false); }
+};
+
+/* ---------- card ---------- */
+function renderCard(c) {
+  $("noCard").hidden = true; $("hasCard").hidden = false; $("hist").hidden = false;
+  $("cid").textContent = c.id;
+  $("bal").textContent = money(c.balanceMinor);
+  const st = $("status");
+  if (c.openTrip) {
+    const s = byId[c.openTrip.entryStationId];
+    st.textContent = "In a journey: entered at " + (s ? s.name : c.openTrip.entryStationId) + " (" + when(c.openTrip.tapIn) + "). Pick your exit station and tap out.";
+  } else {
+    st.textContent = "Not in a journey. Pick a station and tap in.";
+  }
+  const trips = c.trips.slice().reverse();
+  $("trips").innerHTML = trips.length ? trips.map((t) => {
+    const a = t.entryStationId ? (byId[t.entryStationId] || {}).name : "no tap-in";
+    const b = t.exitStationId ? (byId[t.exitStationId] || {}).name : "no tap-out";
+    const label = t.status === "COMPLETED" ? "Completed" : "Incomplete";
+    return "<li><div>" + esc(a) + " → " + esc(b) + "<small>" + label + " · " + when(t.tapOut || t.tapIn) + "</small></div><div>" + money(-t.fareMinor) + "</div></li>";
+  }).join("") : '<li class="empty">No trips yet.</li>';
+  const led = c.ledger.slice().reverse();
+  const names = { TOP_UP: "Top-up", FARE: "Fare", PENALTY: "Penalty" };
+  $("ledger").innerHTML = led.length ? led.map((e) =>
+    "<li><div>" + names[e.type] + "<small>" + esc(e.note || "") + " · " + when(e.at) + '</small></div><div class="' + (e.amountMinor < 0 ? "neg" : "pos") + '">' + money(e.amountMinor) + "</div></li>").join("")
+    : '<li class="empty">No entries yet.</li>';
+}
+
+async function refreshCard() {
+  if (!cardId) return;
+  try { renderCard(await api("/cards/" + cardId)); }
+  catch (e) {
+    if (e.code === "CARD_NOT_FOUND") {
+      store.del("metro.cardId"); cardId = null;
+      $("noCard").hidden = false; $("hasCard").hidden = true; $("hist").hidden = true;
+      show($("noCardMsg"), "warn", "The demo server restarted, so your old card was reset. Get a new one to continue.");
+    }
+  }
+}
+
+$("newCard").onclick = async () => {
+  busy([$("newCard")], true);
+  try {
+    const c = await api("/cards", { method: "POST" });
+    cardId = c.id; store.set("metro.cardId", cardId);
+    hide($("cardMsg")); hide($("noCardMsg")); renderCard(c);
+  } catch (e) { show($("noCardMsg"), "bad", e.message); }
+  finally { busy([$("newCard")], false); }
+};
+
+document.querySelectorAll("[data-top]").forEach((b) => {
+  b.onclick = async () => {
+    const all = document.querySelectorAll("[data-top]");
+    busy(all, true); hide($("cardMsg"));
+    try {
+      const c = await api("/cards/" + cardId + "/top-ups", { method: "POST", key: newKey(), body: { amountMinor: Number(b.dataset.top) } });
+      renderCard(c);
+      show($("cardMsg"), "ok", "Added " + money(Number(b.dataset.top)) + ".");
+    } catch (e) { show($("cardMsg"), "bad", e.message); }
+    finally { busy(all, false); }
+  };
+});
+
+async function tap(type) {
+  const btns = [$("tapIn"), $("tapOut")];
+  busy(btns, true); hide($("cardMsg"));
+  try {
+    const r = await api("/cards/" + cardId + "/taps", { method: "POST", key: newKey(), body: { type, stationId: $("gate").value } });
+    const kind = r.penaltyApplied ? "warn" : "ok";
+    let text = r.message + ".";
+    if (r.chargedMinor > 0) text += " Charged " + money(r.chargedMinor) + ".";
+    await refreshCard();
+    show($("cardMsg"), kind, text);
+  } catch (e) { await refreshCard(); show($("cardMsg"), "bad", e.message); }
+  finally { busy(btns, false); }
+}
+$("tapIn").onclick = () => tap("IN");
+$("tapOut").onclick = () => tap("OUT");
+
+/* ---------- start ---------- */
+(async function init() {
+  renderProfile();
+  if (await loadStations()) await refreshCard();
+})();
+</script>
+</body>
+</html>
