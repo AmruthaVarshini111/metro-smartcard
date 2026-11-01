@@ -200,4 +200,4 @@ Planned next:
 
 ## About
 
-Built by Amrutha Varshini ([GitHub](https://github.com/AmruthaVarshini111)).
+Built by Amrutha Varshini ([GitHub](https://github.com/AmruthaVarshini111)) · [LinkedIn](https://www.linkedin.com/in/amrutha-varshini-675ab528a/) · [amruthavarshiniyenugonda9@gmail.com](mailto:amruthavarshiniyenugonda9@gmail.com)
